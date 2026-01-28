@@ -1,10 +1,10 @@
-const CACHE_NAME = 'plan-dep-2026-v31'; // Версия 26 (Обновили!)
+const CACHE_NAME = 'plan-dep-2026-v30'; // ВЕРСИЯ 30
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
-  './logo.jpg' // Важно: здесь указано новое имя файла
+  './logo.jpg'
 ];
 
 self.addEventListener('install', function(event) {
@@ -22,7 +22,6 @@ self.addEventListener('activate', function(event) {
       return Promise.all(
         cacheNames.map(function(cacheName) {
           if (cacheName !== CACHE_NAME) {
-            console.log('Удаление старого кэша:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -32,9 +31,14 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  event.respondWith(
-    fetch(event.request).catch(function() {
-      return caches.match(event.request);
-    })
-  );
+  // Для API скриптов Google пропускаем кэш, для остального - Network First
+  if (event.request.url.includes('script.google.com')) {
+      event.respondWith(fetch(event.request));
+  } else {
+      event.respondWith(
+        fetch(event.request).catch(function() {
+          return caches.match(event.request);
+        })
+      );
+  }
 });
