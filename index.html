@@ -52,7 +52,7 @@
             font-size: 20px;
         }
 
-        /* --- ВКЛАДКИ (КОНТЕНТ) --- */
+        /* --- КОНТЕНТ (ВКЛАДКИ) --- */
         .tab-content {
             display: none;
             padding: 15px;
@@ -94,7 +94,7 @@
             font-weight: bold;
         }
 
-        /* --- КАЛЕНДАРЬ (Месяцы) --- */
+        /* --- КАЛЕНДАРЬ (Кнопки месяцев) --- */
         .months-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -118,7 +118,19 @@
             font-weight: bold;
         }
 
-        /* --- СПИСОК ДИНАМИК --- */
+        /* --- СВОДКА --- */
+        .summary-stats {
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-align: center;
+            color: #555;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* --- СПИСОК ЗАДАЧ --- */
         .dynamic-card {
             background: var(--white);
             border-radius: 10px;
@@ -154,29 +166,23 @@
             color: #888;
         }
 
-        /* Цветовая логика */
+        /* Цветовая логика статусов */
+        /* Зеленый: Посажено (есть ссылка) */
         .status-planted { border-left-color: var(--green); }
         .status-planted .date-col { color: var(--green); }
         .status-planted h4 { color: var(--green); text-decoration: underline; }
+        .status-planted a { color: inherit; }
 
+        /* Желтый: В работе (ссылки нет, но время пришло) */
         .status-work { border-left-color: var(--yellow); }
         .status-work .date-col { color: var(--yellow); }
         
+        /* Серый: Будущее */
         .status-future { border-left-color: var(--grey); }
         .status-future .date-col { color: var(--grey); }
         .status-future a { pointer-events: none; text-decoration: none; color: #333; }
 
-        .summary-stats {
-            background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 13px;
-            text-align: center;
-            color: #666;
-        }
-
-        /* --- НИЖНЕЕ МЕНЮ (НАВИГАЦИЯ) --- */
+        /* --- НИЖНЕЕ МЕНЮ --- */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -203,24 +209,23 @@
             font-weight: bold;
             border-top: 3px solid var(--primary-color);
         }
-
     </style>
 </head>
 <body>
 
     <header class="app-header">
         <div class="logo-area">
-            <img src="2022 новый логотип БНС 3 вариант.png" alt="QAZSTAT" onerror="this.style.display='none'">
-            <span style="font-weight:bold; margin-left:10px; vertical-align: middle;">Департамент статистики</span>
+            <img src="logo.jpg" alt="QAZSTAT" onerror="this.style.display='none'">
+            <span style="font-weight:bold; margin-left:10px; font-size: 0.9em;">Департамент статистики</span>
         </div>
         <button class="refresh-btn" onclick="forceUpdate()">↻</button>
     </header>
 
     <div id="tab-plan" class="tab-content">
-        <h3 style="text-align:center; color:#888;">План работ (Основной)</h3>
-        <p style="text-align:center;">Здесь будет ваш основной план работ.</p>
+        <h3 style="text-align:center; color:#888; margin-top:50px;">План работ</h3>
+        <p style="text-align:center;">Здесь можно разместить общий план.</p>
         <div style="text-align:center; margin-top:20px;">
-            <small>Переключитесь на вкладку "Динамика" внизу</small>
+            <small>Перейдите во вкладку <b>Динамика</b></small>
         </div>
     </div>
 
@@ -240,27 +245,27 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item" onclick="switchTab('plan')">📋 План работ</div>
+        <div class="nav-item" onclick="switchTab('plan')">📋 План</div>
         <div class="nav-item active" onclick="switchTab('dynamic')">📊 Динамика</div>
     </nav>
 
     <script>
-        // Ссылка на таблицу ДИНАМИКИ
-        const DYNAMIC_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYOTGJUSzQQPVq-gzBIdTV_JLH7ySx_PltpdsEMsaaCVFjLmLaYEpeMAg3QSU17XgYIdRo_sZA50RM/pub?output=csv';
+        // Ссылка на Google CSV
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYOTGJUSzQQPVq-gzBIdTV_JLH7ySx_PltpdsEMsaaCVFjLmLaYEpeMAg3QSU17XgYIdRo_sZA50RM/pub?output=csv';
         
-        // Глобальные переменные состояния
+        // Настройки
         let allData = [];
-        let currentMonth = new Date().getMonth();
+        let currentMonth = new Date().getMonth(); // Текущий месяц (0=Январь)
         let currentIndustry = 'Все';
         const monthNames = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
 
-        // --- Инициализация ---
+        // Запуск при загрузке
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
             renderMonths();
         });
 
-        // Функция обновления (Кнопка в углу)
+        // 1. Функция принудительного обновления
         function forceUpdate() {
             if('caches' in window){
                 caches.keys().then(function(names) {
@@ -270,71 +275,70 @@
             location.reload(true);
         }
 
-        // Переключение вкладок
+        // 2. Переключение вкладок
         function switchTab(tabName) {
+            // Скрываем все вкладки
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             
+            // Показываем нужную
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            // Находим кнопку меню по тексту (упрощенно) или индексу.
-            // В данном случае просто хардкод для демо:
-            const items = document.querySelectorAll('.nav-item');
-            if(tabName === 'plan') items[0].classList.add('active');
-            else items[1].classList.add('active');
+            
+            // Подсвечиваем кнопку меню
+            const menuIndex = tabName === 'plan' ? 0 : 1;
+            document.querySelectorAll('.nav-item')[menuIndex].classList.add('active');
         }
 
-        // --- Загрузка и Парсинг ---
+        // 3. Загрузка данных
         function loadData() {
-            Papa.parse(DYNAMIC_CSV_URL, {
+            Papa.parse(CSV_URL, {
                 download: true,
-                header: false, // У вас заголовки на русском, проще по индексам
+                header: false, 
                 skipEmptyLines: true,
                 complete: function(results) {
-                    // Пропускаем первую строку (заголовки)
-                    const rawRows = results.data.slice(1);
+                    const rawRows = results.data.slice(1); // Убираем заголовок
                     
-                    // Маппинг столбцов: 
-                    // [0] Отрасль, [1] Наименование, [4] Дата посадки, [5] Ссылки
+                    // Собираем данные. Индексы колонок:
+                    // 0: Отрасль, 1: Наименование, 4: Дата посадки, 5: Ссылки
                     allData = rawRows.map(row => ({
                         industry: row[0] ? row[0].trim() : 'Общее',
                         name: row[1],
                         dateStr: row[4],
                         link: row[5] ? row[5].trim() : ''
-                    })).filter(item => item.name && item.dateStr); // Убираем мусор
+                    })).filter(item => item.name && item.dateStr);
 
                     initIndustryFilter();
                     renderList();
                 },
                 error: function(err) {
-                    document.getElementById('summary-text').innerText = "Ошибка загрузки данных";
+                    document.getElementById('summary-text').innerText = "Ошибка доступа к таблице";
                 }
             });
         }
 
-        // --- Логика Фильтра Отраслей ---
+        // 4. Отрисовка фильтра отраслей
         function initIndustryFilter() {
             const container = document.getElementById('industry-filter');
-            // Получаем уникальные отрасли
-            const industries = ['Все', ...new Set(allData.map(d => d.industry))];
+            // Уникальные отрасли
+            const uniqueIndustries = ['Все', ...new Set(allData.map(d => d.industry))];
             
             container.innerHTML = '';
             
-            industries.forEach(ind => {
+            uniqueIndustries.forEach(ind => {
                 const btn = document.createElement('span');
                 btn.className = `industry-btn ${ind === currentIndustry ? 'active' : ''}`;
                 btn.innerText = ind;
                 btn.onclick = () => {
-                    // Смена активной отрасли
-                    currentIndustry = ind;
+                    currentIndustry = ind; // Меняем активную отрасль
                     document.querySelectorAll('.industry-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    renderList();
+                    renderList(); // Перерисовываем список
                 };
                 container.appendChild(btn);
             });
         }
 
-        // --- Логика Календаря ---
+        // 5. Отрисовка кнопок месяцев
         function renderMonths() {
             const container = document.getElementById('months-grid');
             container.innerHTML = '';
@@ -352,9 +356,8 @@
             });
         }
 
-        // --- Вспомогательные функции ---
+        // 6. Парсинг даты (ДД.ММ.ГГГГ или ГГГГ-ММ-ДД)
         function parseDate(dateStr) {
-            // Пытаемся понять формат (обычно в гугл таблицах это ДД.ММ.ГГГГ или ГГГГ-ММ-ДД)
             let parts = dateStr.split('.');
             if (parts.length === 3) {
                 return new Date(parts[2], parts[1] - 1, parts[0]);
@@ -362,45 +365,42 @@
             return new Date(dateStr);
         }
 
+        // 7. Определение статуса (Зеленый / Желтый / Серый)
         function getStatus(item, dateObj) {
             const today = new Date();
             today.setHours(0,0,0,0);
             
-            // Если ссылка есть (длиннее 5 символов) -> Зеленый (Посажено)
+            // Есть ссылка (длиннее 5 символов) -> Зеленый
             if (item.link && item.link.length > 5) return 'planted';
             
-            // Если ссылки нет, но дата сегодня или прошла -> Желтый (В работе)
+            // Ссылки нет, но дата сегодня или прошла -> Желтый
             if (dateObj <= today) return 'work';
             
-            // Иначе -> Серый (Рано)
+            // Будущее -> Серый
             return 'future';
         }
 
-        // --- Рендеринг Списка ---
+        // 8. Главная функция отрисовки списка
         function renderList() {
             const listContainer = document.getElementById('dynamics-list');
             const summaryContainer = document.getElementById('summary-text');
             listContainer.innerHTML = '';
 
-            // 1. Фильтр по Месяцу
+            // Фильтрация: Месяц + Отрасль
             let filtered = allData.filter(item => {
                 const d = parseDate(item.dateStr);
-                return d.getMonth() === currentMonth;
+                const isMonthMatch = d.getMonth() === currentMonth;
+                const isIndustryMatch = currentIndustry === 'Все' || item.industry === currentIndustry;
+                return isMonthMatch && isIndustryMatch;
             });
 
-            // 2. Фильтр по Отрасли (если не "Все")
-            if (currentIndustry !== 'Все') {
-                filtered = filtered.filter(item => item.industry === currentIndustry);
-            }
-
-            // 3. Сортировка по дате
+            // Сортировка по дате
             filtered.sort((a, b) => parseDate(a.dateStr) - parseDate(b.dateStr));
 
-            // Статистика
             let stats = { planted: 0, work: 0, future: 0 };
 
             if (filtered.length === 0) {
-                listContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Нет данных за этот период</div>';
+                listContainer.innerHTML = '<div style="text-align:center; padding:30px; color:#999;">В этом месяце задач нет</div>';
             } else {
                 filtered.forEach(item => {
                     const dateObj = parseDate(item.dateStr);
@@ -410,7 +410,7 @@
                     const card = document.createElement('div');
                     card.className = `dynamic-card status-${status}`;
                     
-                    // Ссылка или просто текст
+                    // Если статус "Посажено", делаем название ссылкой
                     const nameHtml = status === 'planted' 
                         ? `<a href="${item.link}" target="_blank">${item.name}</a>` 
                         : item.name;
@@ -426,15 +426,16 @@
                 });
             }
 
-            // Обновление сводки
+            // Обновление текста сводки
             summaryContainer.innerHTML = `
-                Всего: <b>${filtered.length}</b> &nbsp;|&nbsp; 
-                <span style="color:var(--green)">Готово: ${stats.planted}</span> &nbsp;|&nbsp; 
-                <span style="color:var(--yellow)">В работе: ${stats.work}</span>
+                Всего задач: <b>${filtered.length}</b><br>
+                <span style="color:var(--green)">● Готово: ${stats.planted}</span> &nbsp; 
+                <span style="color:var(--yellow)">● В работе: ${stats.work}</span> &nbsp;
+                <span style="color:var(--grey)">● План: ${stats.future}</span>
             `;
         }
 
-        // Регистрация SW (если нужен оффлайн)
+        // Регистрация Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js');
