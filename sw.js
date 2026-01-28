@@ -1,10 +1,10 @@
-const CACHE_NAME = 'plan-dep-2026-v30'; // Версия 24
+const CACHE_NAME = 'plan-dep-2026-v31'; // Версия 26 (Обновили!)
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js',
-  './2022 новый логотип БНС 3 вариант.png' // Исправил на PNG
+  './logo.jpg' // Важно: здесь указано новое имя файла
 ];
 
 self.addEventListener('install', function(event) {
